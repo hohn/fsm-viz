@@ -1,0 +1,49 @@
+# -*- coding: utf-8 -*-
+#+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
+#+OPTIONS: toc:nil
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./l3style.css"/>
+#+HTML: <div id="toc">
+#+TOC: headlines 2        insert TOC here, with two headline levels
+#+HTML: </div> 
+# 
+#+HTML: <div id="org-content">
+
+---------------------- [[./images/under-construction.png]] ----------------------
+
+
+* Overview
+  =fsm-viz= is an animated finite state machine renderer.  You define =Nodes=,
+  =Channels=, and their connections, and =fsm-viz= renders the machine using the
+  =dot(1)= program from the [[https://graphviz.org/about/][graphviz]] suite.  
+
+  To get animation, you send signals to the =Nodes=; the machine propagates
+  these along the =Channels=, and for every step of the propagation the machine is
+  rendered with the same layout but using different colors for edges.
+
+  Displaying these renderings in sequence provides the animation.
+
+* Development setup
+  #+BEGIN_SRC sh
+    # Using requirements.txt 
+    python3 -m venv .venv
+    . .venv/bin/activate
+    python3 -m pip install -r requirements.txt
+
+    # Or separately, for development:
+    pip install --upgrade pip
+    pip install ipython pyflakes mypy
+
+    # Or separately, for running:
+    n/a
+
+    # "Install" for local development:
+    pip install -e .
+
+    # Use the current virtual environment to fix the packages
+    # pip freeze > requirements.txt
+
+  #+END_SRC
+
+* Footnotes
+#+HTML: </div> 
+

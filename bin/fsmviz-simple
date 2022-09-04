@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+
+"""
+"""
+
+import argparse
+import fsm_viz 
+from dataclasses import dataclass, field
+
+#
+#* Handle arguments
+#
+# parser = argparse.ArgumentParser(description='Generate a simple animation')
+# args = parser.parse_args()
+
+#
+#* FSM components
+#
+# @dataclass
+# class RenderPass:
+#     nodes_rendered : set = field(default_factory=set)
+    
+class Environment:
+    """Holds configuration (init) values, shared values, and dynamically scoped
+    variables.  """
+
+    def __init__(self):
+        self._channel_color : int = 0
+    
+    def new_channel_color(self):
+        self._channel_color += 1
+        return self._channel_color
+
+class Node:
+    def __init__(self, env : Environment):
+        self._target_channel_l : list[tuple['Node', 'Channel']] = []
+
+    def outto(self, env, target_channel_l : list[tuple['Node', 'Channel']]):
+        self._target_channel_l = target_channel_l
+
+    def signal(self, env, channel):
+        pass
+
+    def _render_node(self, env) -> str:
+        return 'nd%d [color="blue"];' % id(self)
+
+    def _render_edges(self, env) -> list[str]:
+        return ['nd{:d} -> nd{:d} [color={:d}];'
+                .format(id(self), id(target), channel.color)
+                for target, channel in self._target_channel_l]
+        
+class Channel:
+    def __init__(self, env : Environment):
+        self.color = env.new_channel_color()
+
+class Fsm:
+    def __init__(self, env: Environment, node_l, channel_l):
+        self._node_l : list[Node] = node_l
+        self._channel_l : list[Channel] = channel_l
+
+    def render_dot(self, env) -> list[str]:
+        # header
+        header = """digraph fsmviz_simple {
+        // configure graph elements
+        node [shape=box, fontname="Helvetica", fontsize=11];
+        graph [rankdir = "LR", ranksep=1];
+        edge [colorscheme=paired12, penwidth=2.0];
+        """
+        # footer
+        footer = """// Footer
+        }
+        """
+        # body 
+        nodes = [ node._render_node(env) for node in self._node_l ]
+        edges = [ node._render_edges(env) for node in self._node_l ]
+        # Return a flattened list of strings with structural comments
+        rv =  [header, "// nodes\n"] + nodes + ["// edges\n"]
+        for ed in edges: rv.extend(ed)
+        rv.append(footer)
+        return rv
+
+    def propagate(self, env):
+        pass
+    
+class RenderDot:
+    def __init__(self, env : Environment):
+        pass
+
+    def new_render(self, env, dotreps : list[str]):
+        pass
+
+    def view(self, env):
+        pass
+
+#
+#* Build the machine and render
+#
+
+env = Environment()
+
+left = Node(env)
+middle = Node(env)
+right = Node(env)
+
+good = Channel(env)
+bad = Channel(env)
+
+left.outto(env, [(middle, good), (middle, bad)])
+middle.outto(env, [(right, good), (right, bad)])
+
+machine = Fsm(env, [left, middle, right], [good, bad])
+
+render = RenderDot(env)
+
+# Plain drawing
+dot1 = machine.render_dot(env)
+for line in dot1: print(line)
+
+render.new_render(env, dot1)
+render.view(env)
+
+# # First "good" edge highlight
+# left.signal(env, good)
+# dot1 = machine.render_dot(env)
+# render.add_render(dot1)
+
+# # Second "good" edge highlight
+# machine.propagate(env)
+# dot1 = machine.render_dot(env)
+# render.add_render(dot1)
+
+# # Back to plain drawing
+# machine.propagate(env)
+# dot1 = machine.render_dot(env)
+# render.add_render(dot1)
+# render.finalize()
