@@ -123,11 +123,6 @@ class RenderDot:
         else:
             logging.error("Could not create PNG image: %s", result.stderr)
 
-    def mainloop(self, env):
-        # Only for standalone scripts
-        if not env.args.interactive:
-            self._display_root.mainloop()
-
     def view(self, env):
         # Display most recent image
         # TODO: add slider for all images
@@ -142,6 +137,9 @@ class RenderDot:
         view = tk.Label(root, image=image)
         view.pack()
         ttk.Button(root, text="Close View", command=root.destroy).pack()
+        # Only for standalone scripts
+        if not env.args.interactive:
+            self._display_root.mainloop()
 
 #
 #* Build the machine and render
@@ -168,13 +166,10 @@ render = RenderDot(env)
 if args.gui:
     render.to_image(env, dot1)
     render.view(env)
-    render.mainloop(env)
 else:
     # TODO: Produce dot / png / svg files
-    # dump
+    # dump 
     for line in dot1: print(line)
-
-    pass
 
 # # First "good" edge highlight
 # left.signal(env, good)
