@@ -3,15 +3,40 @@
 """
 """
 
+# Use this file interactively with Tk event loop integration:
+# ipython --gui=tk -i -- -g -i
+# ~/w/fsm-viz/.venv/bin/ipython --gui=tk -i -- -g -i
+
+from tkinter import ttk
 import argparse
+import base64
+import logging
+import os
+import subprocess
+import sys
+import tempfile
+import tkinter as tk
+
 import fsm_viz 
 from dataclasses import dataclass, field
 
 #
 #* Handle arguments
 #
-# parser = argparse.ArgumentParser(description='Generate a simple animation')
-# args = parser.parse_args()
+# Reset arguments for interactive use; requires the -- argument terminator
+if 'ipython' in sys.argv[0]:
+    try: 
+        f = sys.argv.index('--')
+        sys.argv = ['fsmviz-simple'] + sys.argv[f+1:None]
+    except:
+        pass
+
+parser = argparse.ArgumentParser(description='Generate a simple animation')
+parser.add_argument('-g', '--gui', action="store_true",
+                    help='Display an interactive graphical interface (with Tk)')
+parser.add_argument('-i', '--interactive', action="store_true",
+                    help='Run interactively inside ipython')
+args = parser.parse_args()
 
 #
 #* FSM components
@@ -24,8 +49,9 @@ class Environment:
     """Holds configuration (init) values, shared values, and dynamically scoped
     variables.  """
 
-    def __init__(self):
+    def __init__(self, args : argparse.Namespace):
         self._channel_color : int = 0
+        self.args = args
     
     def new_channel_color(self):
         self._channel_color += 1
@@ -58,7 +84,7 @@ class Fsm:
         self._node_l : list[Node] = node_l
         self._channel_l : list[Channel] = channel_l
 
-    def render_dot(self, env) -> list[str]:
+    def as_dot(self, env) -> list[str]:
         # header
         header = """digraph fsmviz_simple {
         // configure graph elements
@@ -84,19 +110,43 @@ class Fsm:
     
 class RenderDot:
     def __init__(self, env : Environment):
-        pass
+        self._image_png : list = []
 
-    def new_render(self, env, dotreps : list[str]):
-        pass
+    def to_image(self, env, dotreps : list[str]):
+        (fd, fname) = tempfile.mkstemp() 
+        for line in dotreps: os.write(fd, line.encode())
+        os.close(fd)
+        result = subprocess.run(['dot', '-Tpng', fname], capture_output=True)
+        os.remove(fname)
+        if result.returncode == 0:
+            self._image_png.append(result.stdout)
+        else:
+            logging.error("Could not create PNG image: %s", result.stderr)
+
+    def mainloop(self, env):
+        # Only for standalone scripts
+        if not env.args.interactive:
+            self._display_root.mainloop()
 
     def view(self, env):
-        pass
+        # Display most recent image
+        # TODO: add slider for all images
+        # replace image using view.configure(image=...)
+        if len(self._image_png) == 0:
+            logging.warning("No images to display")
+            return
+        # root = self._display_root = tk.Toplevel()
+        root = self._display_root = tk.Tk()
+        enc = base64.b64encode(self._image_png[-1]) 
+        image = self._display_image = tk.PhotoImage(data=enc)
+        view = tk.Label(root, image=image)
+        view.pack()
+        ttk.Button(root, text="Close View", command=root.destroy).pack()
 
 #
 #* Build the machine and render
 #
-
-env = Environment()
+env = Environment(args)
 
 left = Node(env)
 middle = Node(env)
@@ -110,27 +160,34 @@ middle.outto(env, [(right, good), (right, bad)])
 
 machine = Fsm(env, [left, middle, right], [good, bad])
 
+# Plain drawing
+dot1 = machine.as_dot(env)
+
 render = RenderDot(env)
 
-# Plain drawing
-dot1 = machine.render_dot(env)
-for line in dot1: print(line)
+if args.gui:
+    render.to_image(env, dot1)
+    render.view(env)
+    render.mainloop(env)
+else:
+    # TODO: Produce dot / png / svg files
+    # dump
+    for line in dot1: print(line)
 
-render.new_render(env, dot1)
-render.view(env)
+    pass
 
 # # First "good" edge highlight
 # left.signal(env, good)
-# dot1 = machine.render_dot(env)
+# dot1 = machine.as_dot(env)
 # render.add_render(dot1)
 
 # # Second "good" edge highlight
 # machine.propagate(env)
-# dot1 = machine.render_dot(env)
+# dot1 = machine.as_dot(env)
 # render.add_render(dot1)
 
 # # Back to plain drawing
 # machine.propagate(env)
-# dot1 = machine.render_dot(env)
+# dot1 = machine.as_dot(env)
 # render.add_render(dot1)
 # render.finalize()
