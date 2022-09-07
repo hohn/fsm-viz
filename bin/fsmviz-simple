@@ -12,6 +12,7 @@ import argparse
 import base64
 import logging
 import os
+import collections 
 import subprocess
 import sys
 import tempfile
@@ -60,15 +61,26 @@ class Environment:
 class Node:
     def __init__(self, env : Environment):
         self._target_channel_l : list[tuple['Node', 'Channel']] = []
+        self._state_signal_queue : dict[('Channel', collections.deque)] = \
+            collections.defaultdict(collections.deque)
 
     def outto(self, env, target_channel_l : list[tuple['Node', 'Channel']]):
         self._target_channel_l = target_channel_l
 
     def signal(self, env, channel):
-        pass
+        self._state_signal_queue[channel].append(1)
 
     def _render_node(self, env) -> str:
-        return 'nd%d [color="blue"];' % id(self)
+        color_self = "black"
+        style = ""
+        fillcolor = "lightblue"
+        for chan, queue in self._state_signal_queue.items():
+            if len(queue) > 0:
+                color_self = "blue"
+                style = "filled"
+                fillcolor = "lightblue"
+        return 'nd%d [color="%s", style="%s", fillcolor="%s"];' % (
+            id(self), color_self, style, fillcolor)
 
     def _render_edges(self, env) -> list[str]:
         return ['nd{:d} -> nd{:d} [color={:d}];'
@@ -124,18 +136,39 @@ class RenderDot:
             logging.error("Could not create PNG image: %s", result.stderr)
 
     def view(self, env):
-        # Display most recent image
-        # TODO: add slider for all images
-        # replace image using view.configure(image=...)
+        if env.args.gui:
+            render._view_tk(env)
+        else:
+            # TODO: Produce dot / png / svg files
+            for line in dot1: print(line)
+
+    def _view_tk(self, env):
+        # Display one image from a list and cycle using a slider.
         if len(self._image_png) == 0:
             logging.warning("No images to display")
             return
-        # root = self._display_root = tk.Toplevel()
-        root = self._display_root = tk.Tk()
-        enc = base64.b64encode(self._image_png[-1]) 
+        if env.args.interactive:
+            root = self._display_root = tk.Toplevel()
+        else:
+            root = self._display_root = tk.Tk()
+        enc = base64.b64encode(self._image_png[0]) 
         image = self._display_image = tk.PhotoImage(data=enc)
+        # image
         view = tk.Label(root, image=image)
         view.pack()
+        # slider / scale
+        def _change_image(index):
+            enc = base64.b64encode(self._image_png[round(float(index))])
+            image = self._display_image = tk.PhotoImage(data=enc)
+            view.configure(image=image)
+        # The ttk scale is missing resolution and value display.
+        tk.Scale(root, command=_change_image, from_=0,
+                 to=len(self._image_png)-1, resolution=1.0,
+                 orient=tk.HORIZONTAL, length="%dc" % len(self._image_png),
+                 width="0.5c"
+                 ).pack()
+
+        # buttom
         ttk.Button(root, text="Close View", command=root.destroy).pack()
         # Only for standalone scripts
         if not env.args.interactive:
@@ -158,21 +191,22 @@ middle.outto(env, [(right, good), (right, bad)])
 
 machine = Fsm(env, [left, middle, right], [good, bad])
 
-# Plain drawing
-dot1 = machine.as_dot(env)
-
 render = RenderDot(env)
 
-if args.gui:
-    render.to_image(env, dot1)
-    render.view(env)
-else:
-    # TODO: Produce dot / png / svg files
-    # dump 
-    for line in dot1: print(line)
+# Plain drawing
+dot1 = machine.as_dot(env)
+render.to_image(env, dot1)
 
-# # First "good" edge highlight
-# left.signal(env, good)
+# First node highlight
+left.signal(env, good)
+dot1 = machine.as_dot(env)
+render.to_image(env, dot1)
+
+# Display
+render.view(env)
+
+# # First "good" channel edge highlight
+# machine.propagate(env)
 # dot1 = machine.as_dot(env)
 # render.add_render(dot1)
 
