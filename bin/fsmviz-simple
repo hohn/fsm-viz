@@ -59,7 +59,8 @@ class Environment:
         return self._channel_color
 
 class Node:
-    def __init__(self, env : Environment):
+    def __init__(self, env : Environment, name: str):
+        self._name = name
         self._target_channel_l : list[tuple['Node', 'Channel']] = []
         self._state_signal_queue : dict[('Channel', collections.deque)] = \
             collections.defaultdict(collections.deque)
@@ -79,8 +80,8 @@ class Node:
                 color_self = "blue"
                 style = "filled"
                 fillcolor = "lightblue"
-        return 'nd%d [color="%s", style="%s", fillcolor="%s"];' % (
-            id(self), color_self, style, fillcolor)
+        return 'nd%d [color="%s", style="%s", fillcolor="%s", label="%s"];' % (
+            id(self), color_self, style, fillcolor, self._name)
 
     def _render_edges(self, env) -> list[str]:
         return ['nd{:d} -> nd{:d} [color={:d}];'
@@ -179,9 +180,9 @@ class RenderDot:
 #
 env = Environment(args)
 
-left = Node(env)
-middle = Node(env)
-right = Node(env)
+left = Node(env, "left")
+middle = Node(env, "middle")
+right = Node(env, "right")
 
 good = Channel(env)
 bad = Channel(env)
