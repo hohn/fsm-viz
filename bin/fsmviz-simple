@@ -10,6 +10,7 @@
 from tkinter import ttk
 import argparse
 import base64
+import io
 import logging
 import os
 import collections 
@@ -37,6 +38,8 @@ parser.add_argument('-g', '--gui', action="store_true",
                     help='Display an interactive graphical interface (with Tk)')
 parser.add_argument('-i', '--interactive', action="store_true",
                     help='Run interactively inside ipython')
+parser.add_argument('-a', '--animated', metavar='FILE', type=str, default="",
+                    help='Write an animated gif to FILE')
 args = parser.parse_args()
 
 #
@@ -175,6 +178,15 @@ class RenderDot:
             # TODO: Produce dot / png / svg files
             for line in dot1: print(line)
 
+    def to_gif(self, env, file):
+        if len(self._image_png) == 0:
+            logging.warning("No images to convert")
+            return
+        from PIL import Image
+        images = [Image.open(io.BytesIO(png)) for png in self._image_png]
+        images[0].save(fp=file, format='GIF', append_images=images[1:None],
+                       save_all=True, duration=400, loop=0)
+        
     def _view_tk(self, env):
         # Display one image from a list and cycle using a slider.
         if len(self._image_png) == 0:
@@ -251,6 +263,11 @@ render.to_image(env, dot1)
 
 # Display
 render.view(env)
+
+# Write animation
+if args.animated:
+    render.to_gif(env, args.animated)
+
 
 # # Second "good" edge highlight
 # machine.propagate(env)

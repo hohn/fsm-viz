@@ -21,6 +21,9 @@
 
   Displaying these renderings in sequence provides the animation.
 
+  The following is produced by =fsmviz-simple -a images/simple.gif=:
+  [[./images/simple.gif]]
+
 * Development setup
   #+BEGIN_SRC sh
     # Install Python on a mac with homebrew
@@ -38,7 +41,7 @@
 
     # ... or install packages directly, for development:
     pip install --upgrade pip
-    pip install ipython pyflakes mypy
+    pip install ipython pyflakes mypy pillow
 
     # "Install" fsm-viz for local development:
     pip install -e .
