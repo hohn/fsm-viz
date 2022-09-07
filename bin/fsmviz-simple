@@ -248,29 +248,36 @@ machine = Fsm(env, [left, middle, right], [good, bad])
 
 render = RenderDot(env)
 
-# Plain drawing
+# Plain drawing, no signals, no state.
 dot1 = machine.as_dot(env)
 render.to_image(env, dot1)
 
-# First node highlight
+# Send signal
 left.signal(env, good)
-dot1 = machine.as_dot(env)
-render.to_image(env, dot1)
 
-# First edge highlight from signal propagation
-machine.propagate(env)
-dot1 = machine.as_dot(env)
-render.to_image(env, dot1)
+if 0:
+    # Manual propagation for testing and illustration
 
-# Second node highlight from signal propagation
-machine.propagate(env)
-dot1 = machine.as_dot(env)
-render.to_image(env, dot1)
+    # First node highlight
+    dot1 = machine.as_dot(env)
+    render.to_image(env, dot1)
 
-# The above are manually propagated for testing.  The purpose of the machine is to
-# propagate and render by itself, which is done next.
+    # First edge highlight from signal propagation
+    machine.propagate(env)
+    dot1 = machine.as_dot(env)
+    render.to_image(env, dot1)
 
+    # Second node highlight from signal propagation
+    machine.propagate(env)
+    dot1 = machine.as_dot(env)
+    render.to_image(env, dot1)
 
+# Propagate and render using a guess for steps
+for i in range(6):
+    dot1 = machine.as_dot(env)
+    render.to_image(env, dot1)
+    machine.propagate(env)
+    
 # Display
 render.view(env)
 
