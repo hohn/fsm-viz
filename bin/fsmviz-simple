@@ -143,7 +143,7 @@ class Fsm:
         // configure graph elements
         node [shape=box, fontname="Helvetica", fontsize=11];
         graph [rankdir = "LR", ranksep=1];
-        edge [colorscheme=paired12, penwidth=2.0];
+        edge [colorscheme=dark28, penwidth=2.0];
         """
         # footer
         footer = """// Footer
