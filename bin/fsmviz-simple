@@ -142,7 +142,7 @@ class Fsm:
         header = """digraph fsmviz_simple {
         // configure graph elements
         node [shape=box, fontname="Helvetica", fontsize=11];
-        graph [rankdir = "LR", ranksep=1];
+        graph [rankdir = "LR", ranksep=1, dpi=150];
         edge [colorscheme=dark28, penwidth=2.0];
         """
         # footer
