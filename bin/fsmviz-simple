@@ -68,6 +68,7 @@ class Node:
         self._target_channel_l : list[tuple['Node', 'Channel']] = []
         self._signal_queue : dict[('Channel', collections.deque)] = \
             collections.defaultdict(collections.deque)
+        self._propagation_buffer : list[tuple['Node', 'Channel']] = []
 
     def outto(self, env, target_channel_l : list[tuple['Node', 'Channel']]):
         self._target_channel_l = target_channel_l
@@ -75,18 +76,25 @@ class Node:
     def signal(self, env, channel: 'Channel'):
         self._signal_queue[channel].append(1)
 
-    def propagate(self, env):
+    def propagate2(self, env):
+        # edge-to-node propagation has to happen after all nodes have been
+        # processed to avoid signal loss on the node itself.
+        for node, channel in self._propagation_buffer:
+            node.signal(env, channel)
+
+    def propagate1(self, env):
         # Propagate all signals by one step
         # The signal path is
         #   _signal_queue -> _channel_active -> target node(s)
         #
         # 1. _channel_active -> target node(s)
         # Propagate signal to target nodes
+        self._propagation_buffer = buffer = []
         for chan in self._channel_active:
             if self._channel_active[chan]:
                 for tgtnode, tgtchan in self._target_channel_l:
                     if tgtchan == chan:
-                        tgtnode.signal(env, chan)
+                        buffer.append((tgtnode, chan))
                 self._channel_active[chan] = False 
 
         # 2. _signal_queue -> _channel_active
@@ -153,7 +161,9 @@ class Fsm:
     def propagate(self, env):
         # Propagate all signals one step
         for node in self._node_l:
-            node.propagate(env)
+            node.propagate1(env)
+        for node in self._node_l:
+            node.propagate2(env)
     
 class RenderDot:
     def __init__(self, env : Environment):
