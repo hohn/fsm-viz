@@ -61,21 +61,49 @@ class Environment:
 class Node:
     def __init__(self, env : Environment, name: str):
         self._name = name
+        self._channel_active : dict['Channel', bool] = collections.defaultdict(lambda: False)
         self._target_channel_l : list[tuple['Node', 'Channel']] = []
-        self._state_signal_queue : dict[('Channel', collections.deque)] = \
+        self._signal_queue : dict[('Channel', collections.deque)] = \
             collections.defaultdict(collections.deque)
 
     def outto(self, env, target_channel_l : list[tuple['Node', 'Channel']]):
         self._target_channel_l = target_channel_l
 
-    def signal(self, env, channel):
-        self._state_signal_queue[channel].append(1)
+    def signal(self, env, channel: 'Channel'):
+        self._signal_queue[channel].append(1)
 
+    def propagate(self, env):
+        # Propagate all signals by one step
+        # The signal path is
+        #   _signal_queue -> _channel_active -> target node(s)
+        #
+        # 1. _channel_active -> target node(s)
+        # Propagate signal to target nodes
+        for chan in self._channel_active:
+            if self._channel_active[chan]:
+                for tgtnode, tgtchan in self._target_channel_l:
+                    if tgtchan == chan:
+                        tgtnode.signal(env, chan)
+                self._channel_active[chan] = False 
+
+        # 2. _signal_queue -> _channel_active
+        for sigchan, sigqueue in self._signal_queue.items():
+            if len(sigqueue) > 0:
+                # XX:
+                # Propagate older signal(s) to channel(s).  New signal(s) only
+                # activate this node.  Signals with no outgoing channels are
+                # dropped.
+                for tgtnode, tgtchan in self._target_channel_l:
+                    if tgtchan == sigchan:
+                        self._channel_active[sigchan] = True
+                sigqueue.popleft()
+
+                
     def _render_node(self, env) -> str:
         color_self = "black"
         style = ""
         fillcolor = "lightblue"
-        for chan, queue in self._state_signal_queue.items():
+        for chan, queue in self._signal_queue.items():
             if len(queue) > 0:
                 color_self = "blue"
                 style = "filled"
@@ -84,13 +112,14 @@ class Node:
             id(self), color_self, style, fillcolor, self._name)
 
     def _render_edges(self, env) -> list[str]:
-        return ['nd{:d} -> nd{:d} [color={:d}];'
-                .format(id(self), id(target), channel.color)
+        return ['nd{:d} -> nd{:d} [color={!s}];'
+                .format(id(self), id(target),
+                        channel.color if self._channel_active[channel] else '"#e0e0e0"')
                 for target, channel in self._target_channel_l]
         
 class Channel:
     def __init__(self, env : Environment):
-        self.color = env.new_channel_color()
+        self.color : int = env.new_channel_color()
 
 class Fsm:
     def __init__(self, env: Environment, node_l, channel_l):
@@ -119,7 +148,9 @@ class Fsm:
         return rv
 
     def propagate(self, env):
-        pass
+        # Propagate all signals one step
+        for node in self._node_l:
+            node.propagate(env)
     
 class RenderDot:
     def __init__(self, env : Environment):
@@ -130,11 +161,12 @@ class RenderDot:
         for line in dotreps: os.write(fd, line.encode())
         os.close(fd)
         result = subprocess.run(['dot', '-Tpng', fname], capture_output=True)
-        os.remove(fname)
         if result.returncode == 0:
+            os.remove(fname)
             self._image_png.append(result.stdout)
         else:
             logging.error("Could not create PNG image: %s", result.stderr)
+            logging.error("Remove temporary files after inspection")
 
     def view(self, env):
         if env.args.gui:
@@ -203,13 +235,22 @@ left.signal(env, good)
 dot1 = machine.as_dot(env)
 render.to_image(env, dot1)
 
+# First edge highlight from signal propagation
+machine.propagate(env)
+dot1 = machine.as_dot(env)
+render.to_image(env, dot1)
+
+# Second node highlight from signal propagation
+machine.propagate(env)
+dot1 = machine.as_dot(env)
+render.to_image(env, dot1)
+
+# The above are manually propagated for testing.  The purpose of the machine is to
+# propagate and render by itself, which is done next.
+
+
 # Display
 render.view(env)
-
-# # First "good" channel edge highlight
-# machine.propagate(env)
-# dot1 = machine.as_dot(env)
-# render.add_render(dot1)
 
 # # Second "good" edge highlight
 # machine.propagate(env)
