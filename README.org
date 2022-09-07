@@ -41,7 +41,7 @@
 
     # ... or install packages directly, for development:
     pip install --upgrade pip
-    pip install ipython pyflakes mypy pillow
+    pip install ipython pyflakes mypy pillow types-Pillow
 
     # "Install" fsm-viz for local development:
     pip install -e .
@@ -51,6 +51,9 @@
 
     # Occasional typechecking
     mypy bin/fsmviz-simple
+
+    # Using ipython to develop bin/fsmviz-* with Tk UI
+    ipython --gui=tk -i -- -g -i
   #+END_SRC
 
 * Footnotes
