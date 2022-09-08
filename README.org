@@ -37,7 +37,7 @@
     . .venv/bin/activate
 
     # Install packages using requirements.txt ...
-    python3.10 -m pip install -r requirements.txt
+    # python3.10 -m pip install -r requirements.txt
 
     # ... or install packages directly, for development:
     pip install --upgrade pip
@@ -45,6 +45,12 @@
 
     # "Install" fsm-viz for local development:
     pip install -e .
+
+    # Get the material design icons and index them
+    wget https://github.com/google/material-design-icons/archive/refs/tags/4.0.0.tar.gz
+    tar zxf 4.0.0.tar.gz "*/png/*"
+    mv material-design-icons-4.0.0/ material-design
+    find material-design > material-design-list
 
     # Use the current virtual environment to fix the packages
     # pip freeze > requirements.txt
@@ -57,5 +63,7 @@
   #+END_SRC
 
 * Footnotes
+  - Browse the material-design-icons [[https://fonts.google.com/icons?icon.set=Material+Icons][here]].
+
 #+HTML: </div> 
 

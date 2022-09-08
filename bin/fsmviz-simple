@@ -13,6 +13,7 @@ import base64
 import io
 import logging
 import os
+import pathlib
 import collections 
 import subprocess
 import sys
@@ -56,14 +57,17 @@ class Environment:
     def __init__(self, args : argparse.Namespace):
         self._channel_color : int = 0
         self.args = args
+        self.node_image_width : int = 50
+        self.node_image_height : int = 50
     
     def new_channel_color(self):
         self._channel_color += 1
         return self._channel_color
 
 class Node:
-    def __init__(self, env : Environment, name: str):
+    def __init__(self, env : Environment, name: str, icon: pathlib.Path):
         self._name = name
+        self._icon = icon
         self._channel_active : dict['Channel', bool] = collections.defaultdict(lambda: False)
         self._target_channel_l : list[tuple['Node', 'Channel']] = []
         self._signal_queue : dict[('Channel', collections.deque)] = \
@@ -100,7 +104,6 @@ class Node:
         # 2. _signal_queue -> _channel_active
         for sigchan, sigqueue in self._signal_queue.items():
             if len(sigqueue) > 0:
-                # XX:
                 # Propagate older signal(s) to channel(s).  New signal(s) only
                 # activate this node.  Signals with no outgoing channels are
                 # dropped.
@@ -108,7 +111,6 @@ class Node:
                     if tgtchan == sigchan:
                         self._channel_active[sigchan] = True
                 sigqueue.popleft()
-
                 
     def _render_node(self, env) -> str:
         color_self = "black"
@@ -119,8 +121,24 @@ class Node:
                 color_self = "blue"
                 style = "filled"
                 fillcolor = "lightblue"
-        return 'nd%d [color="%s", style="%s", fillcolor="%s", label="%s"];' % (
-            id(self), color_self, style, fillcolor, self._name)
+        # return 'nd%d [color="%s", style="%s", fillcolor="%s", label="%s"];' % (
+        #     id(self), color_self, style, fillcolor, self._name)
+        id_ = id(self)
+        nodestr = """nd{id_:d} [
+            color="{color_self}", style="{style}", fillcolor="{fillcolor}",
+            shape=plain;
+            // imagescale=true;
+            label=<
+            <table cellspacing="0" border="0" cellborder="1">
+            <tr><td fixedsize="true" width="{env.node_image_width}"
+                height="{env.node_image_height}"
+                ><img src="{self._icon}" /></td></tr>
+            <tr><td>{self._name}</td></tr>
+            </table>
+            >
+        ];
+        """.format_map(locals())
+        return nodestr
 
     def _render_edges(self, env) -> list[str]:
         return ['nd{:d} -> nd{:d} [color={!s}];'
@@ -234,9 +252,17 @@ class RenderDot:
 #
 env = Environment(args)
 
-left = Node(env, "left")
-middle = Node(env, "middle")
-right = Node(env, "right")
+icon = pathlib.Path("material-design/png/places/casino/materialiconsoutlined/48dp/2x/outline_casino_black_48dp.png")
+if not icon.exists():
+    logging.error("Icon %s not found.  Trying default.", icon)
+    icon = pathlib.Path("icons/404-not-found.png")
+    if not icon.exists():
+        logging.error("Icon %s not found.  Run this from the fsm-viz tree.", icon)
+        sys.exit(1)
+
+left = Node(env, "left", icon)
+middle = Node(env, "middle", icon)
+right = Node(env, "right", icon)
 
 good = Channel(env)
 bad = Channel(env)
