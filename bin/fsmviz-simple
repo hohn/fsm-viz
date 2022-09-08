@@ -39,6 +39,8 @@ parser.add_argument('-g', '--gui', action="store_true",
                     help='Display an interactive graphical interface (with Tk)')
 parser.add_argument('-i', '--interactive', action="store_true",
                     help='Run interactively inside ipython')
+parser.add_argument('-p', '--parallel', action="store_true",
+                    help='Render signals in parallel')
 parser.add_argument('-a', '--animated', metavar='FILE', type=str, default="",
                     help='Write an animated gif to FILE')
 args = parser.parse_args()
@@ -247,6 +249,12 @@ class RenderDot:
         if not env.args.interactive:
             self._display_root.mainloop()
 
+def render_and_propagate(env, machine, render, count):
+    for _ in range(count):
+        dot1 = machine.as_dot(env)
+        render.to_image(env, dot1)
+        machine.propagate(env)
+
 #
 #* Build the machine and render
 #
@@ -263,14 +271,18 @@ if not icon.exists():
 left = Node(env, "left", icon)
 middle = Node(env, "middle", icon)
 right = Node(env, "right", icon)
+rightmost = Node(env, "rightmost", icon)
 
 good = Channel(env)
 bad = Channel(env)
 
-left.outto(env, [(middle, good), (middle, bad)])
-middle.outto(env, [(right, good), (right, bad)])
+right.outto(env, [ (rightmost, bad)])
+rightmost.outto(env, [ (left, bad)])
 
-machine = Fsm(env, [left, middle, right], [good, bad])
+left.outto(env, [(middle, good)])
+middle.outto(env, [(right, good)])
+
+machine = Fsm(env, [left, middle, right, rightmost], [good, bad])
 
 render = RenderDot(env)
 
@@ -278,32 +290,22 @@ render = RenderDot(env)
 dot1 = machine.as_dot(env)
 render.to_image(env, dot1)
 
-# Send signal
+# Send first signal
 left.signal(env, good)
 
-if 0:
-    # Manual propagation for testing and illustration
+if args.parallel:
+    # Second signal
+    right.signal(env, bad)
+    # Propagate and render using a guess for step count
+    render_and_propagate(env, machine, render, 6)
+else:
+    # Propagate first signal
+    render_and_propagate(env, machine, render, 6)
+    # Second signal
+    right.signal(env, bad)
+    # Propagate second
+    render_and_propagate(env, machine, render, 6)
 
-    # First node highlight
-    dot1 = machine.as_dot(env)
-    render.to_image(env, dot1)
-
-    # First edge highlight from signal propagation
-    machine.propagate(env)
-    dot1 = machine.as_dot(env)
-    render.to_image(env, dot1)
-
-    # Second node highlight from signal propagation
-    machine.propagate(env)
-    dot1 = machine.as_dot(env)
-    render.to_image(env, dot1)
-
-# Propagate and render using a guess for steps
-for i in range(6):
-    dot1 = machine.as_dot(env)
-    render.to_image(env, dot1)
-    machine.propagate(env)
-    
 # Display
 render.view(env)
 

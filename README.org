@@ -17,12 +17,18 @@
 
   To get animation, you send signals to the =Nodes=; the machine propagates
   these along the =Channels=, and for every step of the propagation the machine is
-  rendered with the same layout but using different colors for edges.
+  rendered with the same layout but using different colors for edges and nodes.
 
   Displaying these renderings in sequence provides the animation.
 
-  The following is produced by =fsmviz-simple -a images/simple.gif=:
+  The following sequential propagation of two signals is produced by
+  =fsmviz-simple -a images/simple.gif=:
   [[./images/simple.gif]]
+
+  The parallel (and confusing) propagation of two signals is produced by 
+  =fsmviz-simple -p -a images/simple-parallel.gif=:
+  [[./images/simple-parallel.gif]]
+
 
 * Development setup
   #+BEGIN_SRC sh
