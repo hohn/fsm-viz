@@ -21,6 +21,7 @@
 
   Displaying these renderings in sequence provides the animation.
 
+* Examples from =fsmviz-simple=
   The following sequential propagation of two signals is produced by
   =fsmviz-simple -a images/simple.gif=:
   [[./images/simple.gif]]
@@ -29,6 +30,11 @@
   =fsmviz-simple -p -a images/simple-parallel.gif=:
   [[./images/simple-parallel.gif]]
 
+  The web view accessed by opening =html/viewer.html= is produced by
+  =fsmviz-simple --html html/fsmviz-simple=
+  It is intended for embedding into more comprehensive web documents or slide
+  shows; currently it looks like this:
+  [[./images/simple-web.png]]
 
 * Development setup
   #+BEGIN_SRC sh

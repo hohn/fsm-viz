@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>fsm-viz frame Slider</title>
+    <link rel="stylesheet" href="./jquery-ui-1.13.2.custom/jquery-ui.min.css">
+    <script src="./jquery-ui-1.13.2.custom/external/jquery/jquery.js"></script>
+    <script src="./jquery-ui-1.13.2.custom/jquery-ui.js"></script>
+    <script src="./viewer.js"></script>
+    <link rel="stylesheet" href="./viewer.css">
+    <script> $( FsmTool.load);</script>
+  </head>
+
+  <body>
+
+    <div id="fsm_header"> 
+      <p>
+        The animation from 
+        <code>fsmviz-simple --html html/fsmviz-simple</code>
+      </p>
+    </div>
+
+    <div id="fsm_animation">
+      <img id="fsm_image" src="./fsmviz-simple/fsmviz-frame-0.png"/>
+    </div>
+
+    <p/>
+
+    <div id="fsm_control">
+      <div id="fsm_frame_id">Viewing frame: 0</div>
+      <div id="fsm_slider"></div>
+    </div>
+
+  </body>
+
+</html>

@@ -43,6 +43,8 @@ parser.add_argument('-p', '--parallel', action="store_true",
                     help='Render signals in parallel')
 parser.add_argument('-a', '--animated', metavar='FILE', type=str, default="",
                     help='Write an animated gif to FILE')
+parser.add_argument('-t', '--html', metavar='DIR', type=str, default="",
+                    help='Write animation frames to files in DIR')
 args = parser.parse_args()
 
 #
@@ -208,6 +210,16 @@ class RenderDot:
             # TODO: Produce dot / png / svg files
             for line in dot1: print(line)
 
+    def to_html(self, env, directory : pathlib.Path):
+        if len(self._image_png) == 0:
+            logging.warning("No images to convert")
+            return
+        from PIL import Image
+        images = [Image.open(io.BytesIO(png)) for png in self._image_png]
+        for idx, image in enumerate(images):
+            file = directory / "fsmviz-frame-{:d}.png".format(idx)
+            image.save(fp=file, format='PNG')
+
     def to_gif(self, env, file):
         if len(self._image_png) == 0:
             logging.warning("No images to convert")
@@ -309,10 +321,15 @@ else:
 # Display
 render.view(env)
 
-# Write animation
+# Write animated gif
 if args.animated:
     render.to_gif(env, args.animated)
 
+# Write individual frames for embedding
+if args.html:
+    outd = pathlib.Path(args.html)
+    outd.mkdir(mode=0o755, parents=True, exist_ok=True)
+    render.to_html(env, outd)
 
 # # Second "good" edge highlight
 # machine.propagate(env)
